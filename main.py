@@ -10,6 +10,24 @@ Pipeline:
 
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+# Validiere Key
+if not OPENAI_API_KEY:
+    print("\n❌ OPENAI_API_KEY nicht in .env gefunden!")
+    print("Erstelle .env Datei mit: OPENAI_API_KEY=sk-proj-...")
+    sys.exit(1)
+
+if not OPENAI_API_KEY.startswith('sk-'):
+    print("\n❌ Ungültiger OPENAI_API_KEY!")
+    sys.exit(1)
+
+print(f"✓ API Key geladen: {OPENAI_API_KEY[:7]}...")
+
 
 # Importiere Module
 from config import *
@@ -27,6 +45,8 @@ from utils import (
     create_summary_report,
     export_pivot_tables
 )
+from transcription_mlx import MLXVideoTranscriber  # ← Neu
+
 
 
 def setup_folders():
@@ -38,15 +58,13 @@ def setup_folders():
 def step1_transcribe_videos():
     """
     Schritt 1: Transkribiere alle Videos
-    
-    Returns:
-        bool: True wenn erfolgreich
     """
     print("\n" + "="*70)
-    print("SCHRITT 1: VIDEO-TRANSKRIPTION")
+    print("SCHRITT 1: VIDEO-TRANSKRIPTION (MLX)")
     print("="*70)
     
-    transcriber = VideoTranscriber(model_size=WHISPER_MODEL)
+    # Nutze MLX statt standard Whisper
+    transcriber = MLXVideoTranscriber(model_size=WHISPER_MODEL)
     
     try:
         transcripts = transcriber.batch_transcribe(
@@ -194,6 +212,65 @@ def step4_save_and_analyze(df):
         print(f"\n✗ Fehler beim Speichern/Analysieren: {e}")
         return False
 
+def step5_cleanup_videos():
+    """
+    Schritt 5: Lösche Videos nach erfolgreicher Verarbeitung
+    """
+    from pathlib import Path
+    
+    print("\n" + "="*70)
+    print("SCHRITT 5: CLEANUP - LÖSCHE VIDEOS")
+    print("="*70)
+    
+    video_folder = Path(VIDEO_FOLDER)
+    transcript_folder = Path(TRANSCRIPT_FOLDER)
+    extraction_folder = Path(EXTRACTION_FOLDER)
+    
+    video_files = list(video_folder.glob("*.mp4"))
+    
+    if not video_files:
+        print("\n✓ Keine Videos zum Löschen vorhanden")
+        return True
+    
+    print(f"\nGefunden: {len(video_files)} Videos\n")
+    
+    deleted_count = 0
+    kept_count = 0
+    
+    for video_file in video_files:
+        # Prüfe ob Transkript UND Extraktion existieren
+        transcript_file = transcript_folder / f"{video_file.stem}.txt"
+        extraction_file = extraction_folder / f"{video_file.stem}.json"
+        
+        if transcript_file.exists() and extraction_file.exists():
+            # Beide Files existieren → Sicher zu löschen
+            try:
+                file_size_mb = video_file.stat().st_size / (1024 * 1024)
+                video_file.unlink()
+                print(f"✓ Gelöscht: {video_file.name} ({file_size_mb:.1f} MB)")
+                deleted_count += 1
+            except Exception as e:
+                print(f"✗ Fehler beim Löschen {video_file.name}: {e}")
+                kept_count += 1
+        else:
+            # Noch nicht vollständig verarbeitet → Behalten
+            print(f"⚠ Behalten: {video_file.name} (noch nicht vollständig verarbeitet)")
+            kept_count += 1
+    
+    print(f"\n{'='*70}")
+    print(f"CLEANUP ZUSAMMENFASSUNG")
+    print(f"{'='*70}")
+    print(f"Gelöscht: {deleted_count} Videos")
+    print(f"Behalten: {kept_count} Videos")
+    
+    if deleted_count > 0:
+        # Berechne gesparten Speicherplatz
+        print(f"\n✓ Speicherplatz freigegeben")
+    
+    print(f"{'='*70}\n")
+    
+    return True
+
 
 def run_full_pipeline():
     """
@@ -233,6 +310,11 @@ def run_full_pipeline():
         print("\n✗ Pipeline abgebrochen nach Schritt 4")
         return False
     
+    # Schritt 5: Cleanup (Videos löschen)
+    if not step5_cleanup_videos():
+        print("\n✗ Pipeline abgebrochen nach Schritt 5")
+        return False
+    
     # Erfolg!
     print("\n" + "="*70)
     print("✓ PIPELINE ERFOLGREICH ABGESCHLOSSEN!")
@@ -251,9 +333,6 @@ def run_full_pipeline():
 def run_single_step(step_number):
     """
     Führt nur einen einzelnen Schritt aus
-    
-    Args:
-        step_number: 1, 2, 3, oder 4
     """
     setup_folders()
     
@@ -270,9 +349,10 @@ def run_single_step(step_number):
         df = step3_create_dataframe()
         if df is not None:
             step4_save_and_analyze(df)
+    elif step_number == 5:  # ← NEU
+        step5_cleanup_videos()
     else:
-        print(f"✗ Ungültiger Schritt: {step_number} (muss 1-4 sein)")
-
+        print(f"✗ Ungültiger Schritt: {step_number} (muss 1-5 sein)")
 
 # ============================================================================
 # HAUPTPROGRAMM

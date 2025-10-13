@@ -20,32 +20,69 @@ class VideoTranscriber:
         """
         self.model_size = model_size
         self.model = None
+
+        
+    def check_model_cache(self):
+        """Prüft ob Modell bereits heruntergeladen wurde"""
+        from pathlib import Path
+        cache_dir = Path.home() / ".cache" / "whisper"
+        model_file = cache_dir / f"{self.model_size}.pt"
+        return model_file.exists()
+        
         
     def load_model(self):
-        """Lädt das Whisper-Modell"""
+        """Lädt das Whisper-Modell (einmalig)"""
         if self.model is None:
-            print(f"Lade Whisper-Modell '{self.model_size}'...")
-            self.model = whisper.load_model(self.model_size)
+            # Info über Download
+            if not self.check_model_cache():
+                sizes = {
+                    'tiny': '75 MB', 'base': '142 MB', 
+                    'small': '466 MB', 'medium': '1.5 GB', 
+                    'large': '2.9 GB'
+                }
+                size = sizes.get(self.model_size, 'unknown')
+                print(f"  ⚠ Modell '{self.model_size}' wird heruntergeladen (~{size})")
+                print(f"  Dies geschieht nur beim ersten Mal...")
+            
+            print(f"  Lade Whisper-Modell '{self.model_size}'...")
+            
+            # Auto-detect device wenn nicht angegeben
+            if self.device is None:
+                import torch
+                self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            
+            self.model = whisper.load_model(
+                self.model_size, 
+                device=self.device
+            )
+            
+            print(f"  ✓ Modell geladen auf {self.device.upper()}")
+            
         return self.model
     
     def transcribe(self, video_path, language="de"):
         """
         Transkribiert ein einzelnes Video
-        
-        Args:
-            video_path: Pfad zum Video
-            language: Sprache (default: "de")
-            
-        Returns:
-            dict mit 'text' und 'segments'
         """
+        from pathlib import Path
+        
+        # Konvertiere zu Path-Objekt (handled Leerzeichen automatisch)
+        video_path = Path(video_path)
+        
+        # Prüfe ob existiert
+        if not video_path.exists():
+            raise FileNotFoundError(f"Video nicht gefunden: {video_path}")
+        
         self.load_model()
         
-        print(f"  Transkribiere: {Path(video_path).name}")
+        print(f"  Transkribiere: {video_path.name}")
+        
+        # ← WICHTIG: str(video_path) handled Leerzeichen korrekt!
         result = self.model.transcribe(
-            video_path, 
+            str(video_path),  # ← Nutze str(), nicht video_path direkt
             language=language,
-            verbose=False
+            verbose=True,
+            fp16=False
         )
         
         return result

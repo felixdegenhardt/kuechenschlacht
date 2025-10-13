@@ -52,6 +52,7 @@ dependencies:
   - python=3.10.18=h19e8193_0
   - pytorch=2.5.1=gpu_mps_py310hbd1d365_204
   - pytorch-mutex=1.0=cpu
+  - conda-forge::ffmpeg  
   - readline=8.3=h0b18652_0
   - setuptools=80.9.0=py310hca03da5_0
   - sleef=3.5.1=h80987f9_2

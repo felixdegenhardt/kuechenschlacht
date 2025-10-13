@@ -12,7 +12,7 @@ class InformationExtractor:
     Klasse für Information Extraction mit ChatGPT API
     """
     
-    def __init__(self, api_key, model="gpt-4o", temperature=0.1):
+    def __init__(self, api_key, model="gpt-4o", temperature=0):
         """
         Initialisiert den Extractor
         
@@ -28,59 +28,62 @@ class InformationExtractor:
     def create_prompt(self, transcript_text, date):
         """
         Erstellt den Extraction-Prompt
-        
-        Args:
-            transcript_text: Transkript-Text
-            date: Datum der Show (YYYY-MM-DD)
-            
-        Returns:
-            str: Prompt
         """
         prompt = f"""Analysiere dieses Transkript einer "Die Küchenschlacht" Episode vom {date}.
 
-Extrahiere folgende Informationen und gib sie als strukturiertes JSON zurück:
+    Extrahiere folgende Informationen und gib sie als strukturiertes JSON zurück:
 
-- Moderator Name und Geschlecht (m/w/d)
-- Juror Name und Geschlecht (m/w/d)
-- Für jeden Kandidaten:
-  - Name und Geschlecht (m/w/d)
-  - Gericht/Dish (das komplette Gericht mit allen Details)
-  - Reihenfolge der Verkostung (Order of Probing: 1, 2, 3, etc.)
-  - Ranking/Platzierung (Ranking number: 1=gewonnen, 2=zweiter Platz, etc.)
+    - Moderator Name und Geschlecht (m/w/d)
+    - Juror Name und Geschlecht (m/w/d)
+    - Für jeden Kandidaten:
+      - Name und Geschlecht (m/w/d)
+      - Alter (WICHTIG: Wird meist NUR visuell eingeblendet, NICHT gesprochen! Wenn nicht im Audio erwähnt → null)
+      - Wohnort (Stadt, falls erwähnt, sonst null)
+      - Beruf (falls erwähnt, sonst null)
+      - Gericht/Dish (das komplette Gericht mit allen Details)
+      - Reihenfolge der Verkostung durch den Juror (Order of Probing: 1, 2, 3, etc.). DAS FINDET RELATIV AM ENDE STATT.
+      - Ranking/Platzierung (Ranking number: 1=gewonnen, 2=zweiter Platz, etc.)
 
-WICHTIG:
-- Achte auf Hinweise wie "zuerst probieren wir", "als nächstes", "zum Schluss"
-- Der Gewinner wird oft am Ende genannt mit "Gewinner ist..." oder "den Tagessieg holt..."
-- Wenn ein Kandidat ausscheidet: höheres Ranking (schlechter)
-- Wenn Geschlecht nicht eindeutig: schätze anhand des Namens oder Pronomen
-- Bei ChampionsWeek gibt es 6 Kandidaten, sonst meist 5-6
-- Moderatoren: Mario Kotaska, Nelson Müller, Robin Pietsch, Ali Güngörmüş, etc.
+    WICHTIG:
+    - Das Probieren beginnt nachdem der Juror angekündigt wird (gegen Ende!). Es ist nicht die Vorstellung der Kandidaten
+    - Achte auf Hinweise wie "zuerst probieren wir", "als nächstes", "zum Schluss"
+    - Wenn ein Kandidat ausscheidet: höheres Ranking (schlechter)
+    - Wenn Geschlecht nicht eindeutig: schätze anhand des Namens oder Pronomen
+    - Moderatoren und Juroren: https://de.wikipedia.org/wiki/Die_K%C3%BCchenschlacht
 
-Format (NUR JSON, kein zusätzlicher Text):
-{{
-  "moderator": {{"name": "Mario Kotaska", "gender": "m"}},
-  "juror": {{"name": "Alina Meissner-Bebrout", "gender": "w"}},
-  "candidates": [
-    {{
-      "name": "Julius Kuschel",
-      "gender": "m",
-      "dish": "Dim Sum mit Hackfleischfüllung im Pilz-Wild-Sud",
-      "probing_order": 1,
-      "ranking": 1
-    }},
-    {{
-      "name": "Johannes Hamackers",
-      "gender": "m",
-      "dish": "Pilz-Maultaschen mit Röstzwiebeln im Kartoffelsud",
-      "probing_order": 2,
-      "ranking": 2
-    }}
-  ]
-}}
+    - Erfinde nichts!
 
-Transkript:
-{transcript_text}
-"""
+    Format (NUR JSON, kein zusätzlicher Text). Nur Beispiel!
+    {{{{
+      "moderator": {{{{"name": "Name", "gender": "m"}}}},
+      "juror": {{{{"name": "Juror Name", "gender": "w"}}}},
+      "candidates": [
+        {{{{
+          "name": "Julius Kuschel",
+          "gender": "m",
+          "age": null,
+          "location": "Berlin",
+          "profession": "Koch",
+          "dish": "Dim Sum mit Hackfleischfüllung im Pilz-Wild-Sud",
+          "probing_order": 1,
+          "ranking": 1
+        }}}},
+        {{{{
+          "name": "Johannes Hamackers",
+          "gender": "m",
+          "age": null,
+          "location": "München",
+          "profession": "Ingenieur",
+          "dish": "Pilz-Maultaschen mit Röstzwiebeln im Kartoffelsud",
+          "probing_order": 2,
+          "ranking": 2
+        }}}}
+      ]
+    }}}}
+
+    Transkript:
+    {transcript_text}
+    """
         return prompt
     
     def extract(self, transcript_text, date, max_chars=12000):

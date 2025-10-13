@@ -11,6 +11,35 @@ from pathlib import Path
 # DATUM-EXTRAKTION
 # ============================================================================
 
+def extract_season_episode_from_filename(filename):
+    """
+    Extrahiert Season und Episode aus Dateinamen
+    
+    Args:
+        filename: Dateiname
+        
+    Returns:
+        tuple: (season, episode) oder (None, None)
+    
+    Beispiele:
+        'Die_Küchenschlacht_...(S2023_E189)-1568355266.mp4' → ('2023', '189')
+        'Die_Küchenschlacht_...(S2023_E189)' → ('2023', '189')
+    """
+    import re
+    
+    filename = str(filename)
+    
+    # Pattern: (S2023_E189) oder S2023_E189
+    match = re.search(r'\(?S(\d{4})_E(\d+)\)?', filename)
+    
+    if match:
+        season = match.group(1)  # z.B. "2023"
+        episode = match.group(2)  # z.B. "189"
+        return season, episode
+    
+    return None, None
+
+
 def extract_date_from_filename(filename):
     """
     Extrahiert Datum aus verschiedenen Dateinamen-Formaten
@@ -23,42 +52,108 @@ def extract_date_from_filename(filename):
     
     Beispiele:
         '251013_sendung_1415_dku.mp4' → '2025-10-13'
-        'die-kuechenschlacht-vom-13-oktober-2025-100.txt' → '2025-10-13'
+        'vom_17._Oktober_2023__V.txt' → '2023-10-17'
     """
+    import re
+    
     filename = str(filename).lower()
     
-    # Pattern 1: YYMMDD Format (z.B. 251013)
+    # Monats-Mapping (Deutsch & Englisch)
+    months = {
+        'januar': '01', 'february': '02', 'februar': '02',
+        'märz': '03', 'maerz': '03', 'march': '03',
+        'april': '04',
+        'mai': '05', 'may': '05',
+        'juni': '06', 'june': '06',
+        'juli': '07', 'july': '07',
+        'august': '08',
+        'september': '09',
+        'oktober': '10', 'october': '10',
+        'november': '11',
+        'dezember': '12', 'december': '12'
+    }
+    
+    # Pattern 1: "vom_17._Oktober_2023" oder "vom_17_Oktober_2023"
+    # Matcht: "17._Oktober_2023" oder "17_Oktober_2023"
+    match = re.search(r'vom[_\s]+(\d{1,2})[\._\s]+([a-zä]+)[_\s]+(\d{4})', filename)
+    if match:
+        day = match.group(1).zfill(2)
+        month_name = match.group(2).lower()
+        year = match.group(3)
+        month = months.get(month_name, None)
+        
+        if month:
+            print(f"    Pattern 1 erkannt: {day}.{month_name}.{year}")
+            return f"{year}-{month}-{day}"
+    
+    # Pattern 2: "17._Oktober_2023" (ohne "vom")
+    match = re.search(r'(\d{1,2})[\._\s]+([a-zä]+)[_\s]+(\d{4})', filename)
+    if match:
+        day = match.group(1).zfill(2)
+        month_name = match.group(2).lower()
+        year = match.group(3)
+        month = months.get(month_name, None)
+        
+        if month:
+            print(f"    Pattern 2 erkannt: {day}.{month_name}.{year}")
+            return f"{year}-{month}-{day}"
+    
+    # Pattern 3: YYMMDD Format (z.B. 251013)
     match = re.search(r'(\d{2})(\d{2})(\d{2})', filename)
     if match:
         year = '20' + match.group(1)
         month = match.group(2)
         day = match.group(3)
-        return f"{year}-{month}-{day}"
+        
+        # Validiere Datum
+        try:
+            from datetime import datetime
+            datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
+            print(f"    Pattern 3 erkannt: {year}-{month}-{day}")
+            return f"{year}-{month}-{day}"
+        except ValueError:
+            pass  # Ungültiges Datum, versuche nächstes Pattern
     
-    # Pattern 2: Text Format "13-oktober-2025"
-    months = {
-        'januar': '01', 'februar': '02', 'märz': '03', 'maerz': '03',
-        'april': '04', 'mai': '05', 'juni': '06', 
-        'juli': '07', 'august': '08', 'september': '09',
-        'oktober': '10', 'november': '11', 'dezember': '12'
-    }
-    
-    match = re.search(r'(\d{1,2})-([a-zä]+)-(\d{4})', filename)
+    # Pattern 4: "13-oktober-2025" oder "13_oktober_2025"
+    match = re.search(r'(\d{1,2})[-_]([a-zä]+)[-_](\d{4})', filename)
     if match:
         day = match.group(1).zfill(2)
-        month_name = match.group(2)
+        month_name = match.group(2).lower()
         year = match.group(3)
-        month = months.get(month_name, '00')
+        month = months.get(month_name, None)
+        
+        if month:
+            print(f"    Pattern 4 erkannt: {day}-{month_name}-{year}")
+            return f"{year}-{month}-{day}"
+    
+    # Pattern 5: "13-10-2025" oder "13_10_2025"
+    match = re.search(r'(\d{1,2})[-_](\d{1,2})[-_](\d{4})', filename)
+    if match:
+        day = match.group(1).zfill(2)
+        month = match.group(2).zfill(2)
+        year = match.group(3)
+        print(f"    Pattern 5 erkannt: {day}-{month}-{year}")
         return f"{year}-{month}-{day}"
     
-    # Pattern 3: "vom-DD-MM-YYYY" oder ähnlich
+    # Pattern 6: ISO Format "2025-10-13" oder "20251013"
+    match = re.search(r'(\d{4})[-_]?(\d{2})[-_]?(\d{2})', filename)
+    if match:
+        year = match.group(1)
+        month = match.group(2)
+        day = match.group(3)
+        print(f"    Pattern 6 erkannt: {year}-{month}-{day}")
+        return f"{year}-{month}-{day}"
+    
+    # Pattern 7: "DD.MM.YYYY"
     match = re.search(r'(\d{1,2})\.(\d{1,2})\.(\d{4})', filename)
     if match:
         day = match.group(1).zfill(2)
         month = match.group(2).zfill(2)
         year = match.group(3)
+        print(f"    Pattern 7 erkannt: {day}.{month}.{year}")
         return f"{year}-{month}-{day}"
     
+    print(f"    ⚠ Warnung: Konnte kein Datum extrahieren aus: {filename}")
     return None
 
 
@@ -69,12 +164,6 @@ def extract_date_from_filename(filename):
 def validate_dataframe(df):
     """
     Validiert DataFrame und zeigt Probleme
-    
-    Args:
-        df: pandas DataFrame
-        
-    Returns:
-        pd.DataFrame: DataFrame mit Probleme-Markierungen
     """
     print("\n" + "="*70)
     print("DATEN-VALIDIERUNG")
@@ -87,7 +176,8 @@ def validate_dataframe(df):
     for col, count in missing.items():
         if count > 0:
             has_missing = True
-            print(f"   {col}: {count} ({count/len(df)*100:.1f}%)")
+            percentage = count / len(df) * 100
+            print(f"   {col}: {count} ({percentage:.1f}%)")
     
     if not has_missing:
         print("   ✓ Keine fehlenden Werte!")
@@ -101,6 +191,14 @@ def validate_dataframe(df):
         print(f"   ⚠ Ungültige Geschlechter: {invalid_genders}")
     else:
         print("   ✓ Alle Geschlechter valide")
+    
+    # Age sollte numerisch sein (oder null)
+    if 'Candidate Age' in df.columns:
+        try:
+            pd.to_numeric(df['Candidate Age'], errors='coerce')
+            print("   ✓ Alter numerisch oder leer")
+        except:
+            print("   ⚠ Alter enthält nicht-numerische Werte")
     
     # Ranking sollte numerisch sein
     try:
@@ -120,13 +218,9 @@ def validate_dataframe(df):
     
     return df
 
-
 def show_statistics(df):
     """
-    Zeigt Statistiken über das DataFrame
-    
-    Args:
-        df: pandas DataFrame
+    Zeigt erweiterte Statistiken über das DataFrame
     """
     print("\n" + "="*70)
     print("STATISTIKEN")
@@ -137,6 +231,24 @@ def show_statistics(df):
     print(f"Anzahl Shows: {df['Date of Show'].nunique()}")
     print(f"Zeitraum: {df['Date of Show'].min()} bis {df['Date of Show'].max()}")
     
+    # Season/Episode Stats
+    if 'Season' in df.columns and 'Episode' in df.columns:
+        print(f"\nSeason/Episode:")
+        seasons = df['Season'].dropna()
+        seasons = seasons[seasons != '']
+        if len(seasons) > 0:
+            seasons_unique = sorted(seasons.unique())
+            print(f"  Seasons: {seasons_unique}")
+            
+            for season in seasons_unique:
+                season_data = df[df['Season'] == season]
+                episodes = season_data['Episode'].dropna()
+                episodes = episodes[episodes != '']
+                if len(episodes) > 0:
+                    episodes = pd.to_numeric(episodes, errors='coerce').dropna()
+                    if len(episodes) > 0:
+                        print(f"  Season {season}: {len(episodes.unique())} Episoden (E{int(episodes.min())} - E{int(episodes.max())})")
+    
     # Moderatoren
     print(f"\nModeratoren ({df['Moderator Name'].nunique()}):")
     for mod in df['Moderator Name'].value_counts().head(10).items():
@@ -145,7 +257,7 @@ def show_statistics(df):
     # Juroren
     print(f"\nTop Juroren ({df['Juror'].nunique()}):")
     for juror in df['Juror'].value_counts().head(10).items():
-print(f"  {juror[0]}: {juror[1]} Auftritte")
+        print(f"  {juror[0]}: {juror[1]} Auftritte")
     
     # Kandidaten
     print(f"\nKandidaten:")
@@ -160,22 +272,38 @@ print(f"  {juror[0]}: {juror[1]} Auftritte")
         gender_label = {'m': 'Männlich', 'w': 'Weiblich', 'd': 'Divers'}.get(gender, gender)
         print(f"  {gender_label}: {count} ({percentage:.1f}%)")
     
+    # Alter (WIEDER HINZUGEFÜGT)
+    if 'Candidate Age' in df.columns:
+        print(f"\nAltersstatistiken:")
+        age_data = df['Candidate Age'].dropna()
+        if len(age_data) > 0:
+            print(f"  Durchschnitt: {age_data.mean():.1f} Jahre")
+            print(f"  Median: {age_data.median():.0f} Jahre")
+            print(f"  Min: {age_data.min():.0f} Jahre")
+            print(f"  Max: {age_data.max():.0f} Jahre")
+            print(f"  Angaben vorhanden: {len(age_data)}/{len(df)} ({len(age_data)/len(df)*100:.1f}%)")
+        else:
+            print(f"  Keine Altersangaben vorhanden (wird meist nur visuell eingeblendet)")
+    
+    # Wohnorte
+    print(f"\nTop Wohnorte:")
+    location_counts = df['Candidate Location'].value_counts().head(10)
+    for location, count in location_counts.items():
+        if location and str(location).strip():
+            print(f"  {location}: {count}x")
+    
+    # Berufe
+    print(f"\nTop Berufe:")
+    profession_counts = df['Candidate Profession'].value_counts().head(10)
+    for profession, count in profession_counts.items():
+        if profession and str(profession).strip():
+            print(f"  {profession}: {count}x")
+    
     # Gerichte-Analyse
     print(f"\nGerichte:")
     print(f"  Gesamt: {df['Dish'].nunique()}")
     
-    # Häufigste Begriffe in Gerichten
-    all_dishes = ' '.join(df['Dish'].dropna()).lower()
-    common_words = ['mit', 'und', 'im', 'auf', 'an', 'in', 'zu', 'von']
-    dish_words = [w for w in all_dishes.split() if len(w) > 4 and w not in common_words]
-    from collections import Counter
-    top_ingredients = Counter(dish_words).most_common(10)
-    print(f"  Häufigste Begriffe in Gerichten:")
-    for word, count in top_ingredients:
-        print(f"    {word}: {count}x")
-    
     print("\n" + "="*70 + "\n")
-
 
 def export_problematic_entries(df, output_path="problematic_entries.csv"):
     """
@@ -205,13 +333,7 @@ def export_problematic_entries(df, output_path="problematic_entries.csv"):
 
 def clean_dataframe(df):
     """
-    Bereinigt DataFrame (entfernt Duplikate, korrigiert Formatierung, etc.)
-    
-    Args:
-        df: pandas DataFrame
-        
-    Returns:
-        pd.DataFrame: Bereinigtes DataFrame
+    Bereinigt DataFrame
     """
     print("\n" + "="*70)
     print("DATEN-BEREINIGUNG")
@@ -234,6 +356,14 @@ def clean_dataframe(df):
     # 3. Konvertiere numerische Spalten
     df['Order of Probing'] = pd.to_numeric(df['Order of Probing'], errors='coerce')
     df['Ranking number'] = pd.to_numeric(df['Ranking number'], errors='coerce')
+    df['Candidate Age'] = pd.to_numeric(df['Candidate Age'], errors='coerce')  # ← WIEDER HINZUGEFÜGT
+    
+    # Season & Episode als String
+    if 'Season' in df.columns:
+        df['Season'] = df['Season'].astype(str).replace('nan', '')
+    if 'Episode' in df.columns:
+        df['Episode'] = df['Episode'].astype(str).replace('nan', '')
+    
     print(f"✓ Numerische Spalten konvertiert")
     
     # 4. Standardisiere Gender
@@ -244,13 +374,21 @@ def clean_dataframe(df):
     }
     
     for col in ['Moderator Gender', 'Candidate Gender', 'Juror Gender']:
-        df[col] = df[col].str.lower().map(gender_mapping).fillna(df[col])
+        if col in df.columns:
+            df[col] = df[col].str.lower().map(gender_mapping).fillna(df[col])
     print(f"✓ Geschlechter standardisiert")
     
-    # 5. Sortiere nach Datum
+    # 5. Sortiere nach Datum, dann Episode
     df['Date of Show'] = pd.to_datetime(df['Date of Show'], errors='coerce')
-    df = df.sort_values('Date of Show').reset_index(drop=True)
-    print(f"✓ Nach Datum sortiert")
+    
+    if 'Episode' in df.columns:
+        df['Episode_num'] = pd.to_numeric(df['Episode'], errors='coerce')
+        df = df.sort_values(['Date of Show', 'Season', 'Episode_num']).reset_index(drop=True)
+        df = df.drop('Episode_num', axis=1)
+    else:
+        df = df.sort_values('Date of Show').reset_index(drop=True)
+    
+    print(f"✓ Nach Datum & Episode sortiert")
     
     print(f"\n✓ Bereinigung abgeschlossen: {len(df)} Einträge")
     print("="*70 + "\n")

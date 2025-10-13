@@ -15,10 +15,15 @@ class DataFrameConverter:
     def __init__(self):
         self.columns = [
             'Date of Show',
+            'Season',
+            'Episode',
             'Moderator Name',
             'Moderator Gender',
             'Candidate Name',
             'Candidate Gender',
+            'Candidate Age',           # ← WIEDER HINZUGEFÜGT
+            'Candidate Location',
+            'Candidate Profession',
             'Dish',
             'Juror',
             'Juror Gender',
@@ -26,16 +31,9 @@ class DataFrameConverter:
             'Ranking number'
         ]
     
-    def json_to_rows(self, extraction_data, date):
+    def json_to_rows(self, extraction_data, date, season=None, episode=None):
         """
         Konvertiert ein Extraction-JSON zu DataFrame-Rows
-        
-        Args:
-            extraction_data: Dict mit extrahierten Daten
-            date: Datum der Show
-            
-        Returns:
-            list: Liste von Row-Dicts
         """
         rows = []
         
@@ -45,10 +43,15 @@ class DataFrameConverter:
         for candidate in extraction_data.get('candidates', []):
             row = {
                 'Date of Show': date,
+                'Season': season,
+                'Episode': episode,
                 'Moderator Name': moderator.get('name', ''),
                 'Moderator Gender': moderator.get('gender', ''),
                 'Candidate Name': candidate.get('name', ''),
                 'Candidate Gender': candidate.get('gender', ''),
+                'Candidate Age': candidate.get('age', None),  # ← WIEDER HINZUGEFÜGT
+                'Candidate Location': candidate.get('location', ''),
+                'Candidate Profession': candidate.get('profession', ''),
                 'Dish': candidate.get('dish', ''),
                 'Juror': juror.get('name', ''),
                 'Juror Gender': juror.get('gender', ''),
@@ -58,14 +61,16 @@ class DataFrameConverter:
             rows.append(row)
         
         return rows
-    
-    def json_file_to_rows(self, json_path, date):
+            
+    def json_file_to_rows(self, json_path, date, season=None, episode=None):
         """
         Lädt JSON-Datei und konvertiert zu Rows
         
         Args:
             json_path: Pfad zur JSON-Datei
             date: Datum der Show
+            season: Season (Jahr)
+            episode: Episode Nummer
             
         Returns:
             list: Liste von Row-Dicts
@@ -73,7 +78,7 @@ class DataFrameConverter:
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            return self.json_to_rows(data, date)
+            return self.json_to_rows(data, date, season, episode)
         except Exception as e:
             print(f"  ✗ Fehler beim Laden von {json_path}: {e}")
             return []
@@ -89,6 +94,8 @@ class DataFrameConverter:
         Returns:
             pd.DataFrame
         """
+        from utils import extract_season_episode_from_filename  # ← Import hinzufügen
+        
         extraction_folder = Path(extraction_folder)
         json_files = list(extraction_folder.glob("*.json"))
         
@@ -107,8 +114,17 @@ class DataFrameConverter:
                 print(f"  ⚠ Konnte Datum nicht extrahieren, überspringe...")
                 continue
             
+            print(f"  Datum: {date}")
+            
+            # Season & Episode extrahieren
+            season, episode = extract_season_episode_from_filename(json_file.name)
+            if season and episode:
+                print(f"  Season: {season}, Episode: {episode}")
+            else:
+                print(f"  ⚠ Konnte Season/Episode nicht extrahieren")
+            
             # Konvertiere zu Rows
-            rows = self.json_file_to_rows(json_file, date)
+            rows = self.json_file_to_rows(json_file, date, season, episode)
             if rows:
                 all_rows.extend(rows)
                 print(f"  ✓ {len(rows)} Kandidaten hinzugefügt")
