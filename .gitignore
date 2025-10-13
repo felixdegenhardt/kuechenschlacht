@@ -1,0 +1,77 @@
+# Conda Environment
+*.conda
+envs/
+pkgs/
+
+# API Keys & Secrets
+.env
+.env.local
+config_local.py
+*.key
+
+# Data Folders (zu groß für Git)
+videos/
+transcripts/
+extractions/
+output/
+*.mp4
+*.txt
+*.json
+*.csv
+*.xlsx
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Whisper Models (werden automatisch heruntergeladen)
+*.pt
+*.pth
+
+# Logs
+*.log
