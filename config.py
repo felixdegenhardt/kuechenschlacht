@@ -30,7 +30,7 @@ WHISPER_MODEL = "small"
 CHATGPT_MODEL = "gpt-4o"
 
 # ChatGPT Temperatur (0.0 = deterministisch, 1.0 = kreativ)
-CHATGPT_TEMPERATURE = 0.1
+CHATGPT_TEMPERATURE = 0
 
 # ============================================================================
 # OUTPUT-EINSTELLUNGEN

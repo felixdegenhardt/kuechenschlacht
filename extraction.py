@@ -29,29 +29,49 @@ class InformationExtractor:
         """
         Erstellt den Extraction-Prompt
         """
-        prompt = f"""Analysiere dieses Transkript einer "Die Küchenschlacht" Episode vom {date}.
+        prompt = f"""prompt = Du bist ein präzises Extraktionsmodell. Analysiere das folgende Transkript einer Kochshow und gib die Informationen als JSON im angegebenen Format zurück.
 
-    Extrahiere folgende Informationen und gib sie als strukturiertes JSON zurück:
+### Struktur der Show (wie im Transkript):
 
-    - Moderator Name und Geschlecht (m/w/d)
-    - Juror Name und Geschlecht (m/w/d)
-    - Für jeden Kandidaten:
-      - Name und Geschlecht (m/w/d)
-      - Alter (WICHTIG: Wird meist NUR visuell eingeblendet, NICHT gesprochen! Wenn nicht im Audio erwähnt → null)
-      - Wohnort (Stadt, falls erwähnt, sonst null)
-      - Beruf (falls erwähnt, sonst null)
-      - Gericht/Dish (das komplette Gericht mit allen Details)
-      - Reihenfolge der Verkostung durch den Juror (Order of Probing: 1, 2, 3, etc.). DAS FINDET RELATIV AM ENDE STATT.
-      - Ranking/Platzierung (Ranking number: 1=gewonnen, 2=zweiter Platz, etc.)
+1. **Vorstellung (am Anfang):**
+   - Jede Kandidatin / jeder Kandidat stellt sich vor mit Formulierungen wie:
+     - „Ich bin [Name], komme aus [Ort].“
+     - „Ich bin [Alter] Jahre alt und arbeite als [Beruf].“
+     - „Ich koche heute [Gericht].“
+   - Diese Angaben definieren die Liste der Kandidat:innen und der Gerichte!
+   - Die Moderatorin oder der Moderator leitet diesen Teil mit Sätzen wie „Heute bei uns…“ oder „Unser erster Kandidat ist…“ ein.
 
-    WICHTIG:
-    - Das Probieren beginnt nachdem der Juror angekündigt wird (gegen Ende!). Es ist nicht die Vorstellung der Kandidaten
-    - Achte auf Hinweise wie "zuerst probieren wir", "als nächstes", "zum Schluss"
-    - Wenn ein Kandidat ausscheidet: höheres Ranking (schlechter)
-    - Wenn Geschlecht nicht eindeutig: schätze anhand des Namens oder Pronomen
-    - Moderatoren und Juroren: https://de.wikipedia.org/wiki/Die_K%C3%BCchenschlacht
+2. **Kochen (Mitte):**
+   - Der Moderator/die Moderatorin spricht mit den Kandidat:innen während des Kochens.
+   - Der Juror ist hier noch nicht anwesend.
 
-    - Erfinde nichts!
+3. **Probieren (gegen Ende):**
+   - Der Juror kommt hinzu. oftmals nach Countdown. Juror wird announced. "Herzlich Willkommen", "Vielen Dank"
+   - Probiert die Gerichte in einer bestimmten Reihenfolge.
+   - Er oder sie **nennt dabei keine Namen**, sondern bezieht sich nur auf die Gerichte:
+     - „Zuerst probiere ich das Risotto.“
+     - „Als Nächstes das Steak.“
+     - „Zum Schluss das...“
+   - **Die Reihenfolge der Probierung (probing_order) ergibt sich ausschließlich aus der Reihenfolge der Gerichtsnennungen!**
+
+4. **Bewertung und Entscheidung (am Ende):**
+   - Die Platzierung (ranking) ergibt sich danach:
+     - „Eine Runde weiter is...“
+     - „Mein Lieblingsgericht war...“
+     - „Das beste Gericht heute war...“
+
+### Ausgabestruktur (nur im folgenden JSON-Format):
+
+
+### Regeln:
+
+- Verwende **nur Informationen aus dem Transkript**, keine Annahmen.
+- Verbinde zuerst Personen mit einem Gericht.
+- Die Reihenfolge der vom Juror genannten Gerichte ist die Probierordnung
+- Antworte **ausschließlich mit valider JSON-Syntax**, keine zusätzlichen Erklärungen.
+- Gib **nur tatsächliche Reihenfolgen** an
+
+
 
     Format (NUR JSON, kein zusätzlicher Text). Nur Beispiel!
     {{{{
@@ -59,24 +79,24 @@ class InformationExtractor:
       "juror": {{{{"name": "Juror Name", "gender": "w"}}}},
       "candidates": [
         {{{{
-          "name": "Julius Kuschel",
+          "name": "Julius",
           "gender": "m",
           "age": null,
           "location": "Berlin",
           "profession": "Koch",
           "dish": "Dim Sum mit Hackfleischfüllung im Pilz-Wild-Sud",
           "probing_order": 1,
-          "ranking": 1
+          "ranking": 2 
         }}}},
         {{{{
-          "name": "Johannes Hamackers",
+          "name": "Johannes ",
           "gender": "m",
           "age": null,
           "location": "München",
           "profession": "Ingenieur",
           "dish": "Pilz-Maultaschen mit Röstzwiebeln im Kartoffelsud",
           "probing_order": 2,
-          "ranking": 2
+          "ranking": 1 
         }}}}
       ]
     }}}}
