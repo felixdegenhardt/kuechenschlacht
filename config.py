@@ -14,7 +14,7 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'sk-proj-...')
 # ORDNER-STRUKTUR
 # ============================================================================
 
-VIDEO_FOLDER = "./Videos"
+VIDEO_FOLDER = "./Videos_test"
 TRANSCRIPT_FOLDER = "./transcripts"
 EXTRACTION_FOLDER = "./extractions"
 OUTPUT_FOLDER = "./output"
@@ -24,7 +24,7 @@ OUTPUT_FOLDER = "./output"
 # ============================================================================
 
 # Whisper Model: "tiny", "base", "small", "medium", "large"
-WHISPER_MODEL = "small"
+WHISPER_MODEL = "turbo"
 
 # ChatGPT Model: "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"
 CHATGPT_MODEL = "gpt-4o"

@@ -15,13 +15,13 @@ class DataFrameConverter:
     def __init__(self):
         self.columns = [
             'Date of Show',
-            'Season',
-            'Episode',
+            'Season',              # NEU
+            'Episode',             # NEU
             'Moderator Name',
             'Moderator Gender',
             'Candidate Name',
             'Candidate Gender',
-            'Candidate Age',           # ← WIEDER HINZUGEFÜGT
+            'Candidate Age',
             'Candidate Location',
             'Candidate Profession',
             'Dish',
@@ -37,24 +37,34 @@ class DataFrameConverter:
         """
         rows = []
         
-        moderator = extraction_data.get('moderator', {})
-        juror = extraction_data.get('juror', {})
+        moderator = extraction_data.get('moderator')
+        juror = extraction_data.get('juror')
+        candidates = extraction_data.get('candidates', [])
         
-        for candidate in extraction_data.get('candidates', []):
+        # Handle null values
+        if moderator is None:
+            moderator = {}
+        if juror is None:
+            juror = {}
+        
+        if not candidates:
+            return []
+        
+        for candidate in candidates:
             row = {
                 'Date of Show': date,
-                'Season': season,
-                'Episode': episode,
-                'Moderator Name': moderator.get('name', ''),
-                'Moderator Gender': moderator.get('gender', ''),
+                'Season': season,                    # NEU
+                'Episode': episode,                  # NEU
+                'Moderator Name': moderator.get('name', '') if moderator else '',
+                'Moderator Gender': moderator.get('gender', '') if moderator else '',
                 'Candidate Name': candidate.get('name', ''),
                 'Candidate Gender': candidate.get('gender', ''),
-                'Candidate Age': candidate.get('age', None),  # ← WIEDER HINZUGEFÜGT
+                'Candidate Age': candidate.get('age', None),
                 'Candidate Location': candidate.get('location', ''),
                 'Candidate Profession': candidate.get('profession', ''),
                 'Dish': candidate.get('dish', ''),
-                'Juror': juror.get('name', ''),
-                'Juror Gender': juror.get('gender', ''),
+                'Juror': juror.get('name', '') if juror else '',
+                'Juror Gender': juror.get('gender', '') if juror else '',
                 'Order of Probing': candidate.get('probing_order', ''),
                 'Ranking number': candidate.get('ranking', '')
             }
@@ -65,15 +75,6 @@ class DataFrameConverter:
     def json_file_to_rows(self, json_path, date, season=None, episode=None):
         """
         Lädt JSON-Datei und konvertiert zu Rows
-        
-        Args:
-            json_path: Pfad zur JSON-Datei
-            date: Datum der Show
-            season: Season (Jahr)
-            episode: Episode Nummer
-            
-        Returns:
-            list: Liste von Row-Dicts
         """
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
@@ -86,15 +87,10 @@ class DataFrameConverter:
     def folder_to_dataframe(self, extraction_folder, date_extractor_func):
         """
         Konvertiert alle JSON-Dateien in einem Ordner zu DataFrame
-        
-        Args:
-            extraction_folder: Ordner mit JSON-Extraction-Dateien
-            date_extractor_func: Funktion zur Datum-Extraktion aus Dateinamen
-            
-        Returns:
-            pd.DataFrame
         """
-        from utils import extract_season_episode_from_filename  # ← Import hinzufügen
+        from utils import extract_season_episode_from_filename  # NEU
+        from pathlib import Path
+        import json
         
         extraction_folder = Path(extraction_folder)
         json_files = list(extraction_folder.glob("*.json"))
@@ -116,7 +112,7 @@ class DataFrameConverter:
             
             print(f"  Datum: {date}")
             
-            # Season & Episode extrahieren
+            # Season & Episode extrahieren (NEU)
             season, episode = extract_season_episode_from_filename(json_file.name)
             if season and episode:
                 print(f"  Season: {season}, Episode: {episode}")
@@ -135,7 +131,12 @@ class DataFrameConverter:
         print(f"✓ Gesamt: {len(all_rows)} Einträge")
         print(f"{'='*70}\n")
         
+        if len(all_rows) == 0:
+            print(f"\n✗ WARNUNG: Keine Rows erstellt!")
+            return None
+        
         # Erstelle DataFrame
+        import pandas as pd
         df = pd.DataFrame(all_rows, columns=self.columns)
         return df
     

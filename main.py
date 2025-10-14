@@ -84,9 +84,6 @@ def step1_transcribe_videos():
 def step2_extract_information():
     """
     Schritt 2: Extrahiere Informationen aus Transkripten
-    
-    Returns:
-        bool: True wenn erfolgreich
     """
     print("\n" + "="*70)
     print("SCHRITT 2: INFORMATION EXTRACTION")
@@ -104,7 +101,8 @@ def step2_extract_information():
             output_folder=EXTRACTION_FOLDER,
             date_extractor_func=extract_date_from_filename,
             skip_existing=SKIP_EXISTING_EXTRACTIONS,
-            max_chars=MAX_TRANSCRIPT_CHARS
+            max_chars=MAX_TRANSCRIPT_CHARS,
+            video_folder=VIDEO_FOLDER  # NEU: Für Metadaten-Zugriff
         )
         
         print(f"\n✓ Extraktion abgeschlossen: {len(extractions)} Transkripte")
