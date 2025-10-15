@@ -14,7 +14,7 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'sk-proj-...')
 # ORDNER-STRUKTUR
 # ============================================================================
 
-VIDEO_FOLDER = "./Videos_test"
+VIDEO_FOLDER = "./Videos"
 TRANSCRIPT_FOLDER = "./transcripts"
 EXTRACTION_FOLDER = "./extractions"
 OUTPUT_FOLDER = "./output"

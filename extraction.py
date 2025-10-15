@@ -104,8 +104,14 @@ AUFGABE: Finde ALLE Kandidaten mit ihren Gerichten.
 ═══════════════════════════════════════════════════════════════════════════════
 WIE ERKENNE ICH KANDIDATEN?
 ═══════════════════════════════════════════════════════════════════════════════
+**Nach der Rückschau** der letzten Sendung stellt der Moderator Kandidaten vor. Häufigstes Muster zum Ende der Rückschau: 
 
-Der Moderator stellt Kandidaten vor. Die Vorstellung kann unterschiedlich sein:
+- ", an die Töpfe, fertig los."
+- "35 Minuten ab jetzt."
+
+IGNORIERE DIE RÜCKSCHAU!
+
+Die Vorstellung kann unterschiedlich sein:
 
 HÄUFIGSTE MUSTER:
 ✓ "Herzlich willkommen, lieber [NAME]" → männlicher Kandidat
@@ -121,7 +127,7 @@ NACH DER BEGRÜSSUNG:
 
 WICHTIG:
 - Es gibt GENAU {expected_candidates} Kandidaten in dieser Sendung
-- Kandidaten werden am ANFANG vorgestellt (erste 30% des Transkripts)
+- Kandidaten werden am ANFANG vorgestellt (aus Teilen 5% - 30% des Transkripts)
 - {juror_name_for_prompt} ist der JUROR - das ist KEIN Kandidat!
 - Der Juror kommt erst SPÄTER und verkostet
 
@@ -224,6 +230,7 @@ Suche SORGFÄLTIG nach den FEHLENDEN {expected_candidates - len(candidates)} Kan
 - Suche nach "Herzlich willkommen, lieber/liebe [NAME]"
 - Ignoriere {juror_name_for_prompt} (Juror)
 - Ignoriere bereits gefundene: {found_names}
+- Ignoriere die ersten 5% des Transkripts!
 - ERFINDE KEINE Namen!
 
 Gib NUR die FEHLENDEN Kandidaten zurück (gleiche JSON-Struktur).
