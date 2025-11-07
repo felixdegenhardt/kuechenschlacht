@@ -4,6 +4,22 @@
 
 This project analyzes juror patterns in the German cooking show "Die Küchenschlacht" (The Kitchen Battle) by examining how juror and candidate gender relate to competition outcomes. Using automated transcription and AI-powered data extraction, I analyze patterns in rankings, eliminations, and tasting order across multiple seasons.
 
+## The Show: Die Küchenschlacht
+
+**Format**: Daily German cooking competition on ZDF, airing Monday-Friday with progressive elimination (typically starting with 6 candidates on Monday, ending with 2 in Friday's finale).
+
+### Key Components
+
+**Candidates**: Amateur home cooks who prepare dishes in the studio. Each introduces themselves and describes their dish.
+
+**Juror**: Professional chef/culinary expert who tastes all dishes and decides rankings. One juror per week (same across all episodes that week).
+
+**Moderator**: Host who guides the show and interviews candidates (not involved in judging).
+
+**Tasting Sequence**: Juror tastes dishes one by one in a specific order, providing feedback after each. Starts with one dish, then progresses in clockwise order.
+
+**Rankings**: At episode end, juror announces who continues and who is eliminated. Rankings: 1 (best/winner) to highest number (eliminated).
+
 ---
 
 ## Research Questions
